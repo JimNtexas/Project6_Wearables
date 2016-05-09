@@ -1,3 +1,7 @@
+Wear support added by Jim Howard, based on example code provided by SWARM:
+http://swarmnyc.com/whiteboard/how-to-design-and-develop-an-android-watch-face-app-wearables-overview/
+
+
 Advanced Android Sample App
 ===================================
 
