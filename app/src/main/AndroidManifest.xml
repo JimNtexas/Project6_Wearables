@@ -18,6 +18,9 @@
 
     <!-- This permission is necessary in order for Sunshine to perform network access. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    
+     <!-- Required to act as a custom watch face. -->
+    <uses-permission android:name="com.google.android.permission.PROVIDE_BACKGROUND" />
 
     <!-- Permissions required by the sync adapter -->
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
@@ -29,6 +32,7 @@
 
     <!-- Permissions required for Google Cloud Messaging -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
     <permission
@@ -191,11 +195,8 @@
 
         <service
             android:name=".wearsupport.SendWearDataService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+            android:enabled="true"
+            android:exported="true">
         </service>
     </application>
 

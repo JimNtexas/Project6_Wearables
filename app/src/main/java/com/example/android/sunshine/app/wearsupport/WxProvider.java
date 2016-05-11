@@ -1,10 +1,12 @@
 package com.example.android.sunshine.app.wearsupport;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
+
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 
 /**
@@ -27,11 +29,14 @@ public class WxProvider extends BroadcastReceiver {
             Log.d(TAG, "Send to watch:");
             Log.d(TAG, "high: " + high + " low: " + low + " desc: " + desc);
             Intent sendWxData = new Intent(context, SendWearDataService.class);
-            intent.setAction(Intent.ACTION_SEND);
+  //          intent.setAction(Intent.ACTION_SEND);
             sendWxData.putExtra(SendWearDataService.HIGH_TEMP, high );
             sendWxData.putExtra(SendWearDataService.LOW_TEMP, low );
-            sendWxData.putExtra(SendWearDataService.WX_DESC, desc );
-            context.startService(sendWxData);
+            sendWxData.putExtra(SendWearDataService.WX_DESC, desc);
+            ComponentName serviceName = context.startService(sendWxData);
+            if(serviceName == null){
+                Log.d(TAG, "SendWearDataService failed to start!" );
+            }
 
         }
     }
