@@ -58,7 +58,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
     // Interval at which to sync with the weather, in seconds.
     // 60 seconds (1 minute) * 180 = 3 hours
-    public static final int SYNC_INTERVAL = 60 * 180;
+    public static final int SYNC_INTERVAL = 60 * 2;
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL/3;
     private static final long DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
     private static final int WEATHER_NOTIFICATION_ID = 3004;
@@ -330,6 +330,13 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 weatherValues.put(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID, weatherId);
 
                 cVVector.add(weatherValues);
+                //Save temps and description to pass to wear
+                SharedPreferences prefs = getContext().getSharedPreferences("WX_DATA", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString("desc", description);
+                editor.putString("high_temp", String.valueOf(high));
+                editor.putString("low_temp", String.valueOf(low));
+                editor.apply();
             }
 
             int inserted = 0;
