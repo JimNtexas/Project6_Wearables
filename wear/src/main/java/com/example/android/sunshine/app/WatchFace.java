@@ -20,6 +20,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -28,6 +30,7 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
@@ -60,6 +63,19 @@ public class WatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
+    private Bitmap mWxIconBm;
+    private String mHighTemp;
+    private String mLowTemp;
+
+    public static final String WX_CLEAR = "clear";
+    public static final String WX_CLOUDY = "clouds";
+    public static final String WX_FOG = "fog";
+    public static final String WX_SCATTERED = "light_clouds";
+    public static final String WX_LIGHT_RAIN = "light_rain";
+    public static final String WX_RAIN = "rain";
+    public static final String WX_SNOW = "snow";
+    public static final String WX_STORM = "storm";
+
     @Override
     public Engine onCreateEngine() {
         return new Engine();
@@ -88,6 +104,7 @@ public class WatchFace extends CanvasWatchFaceService {
     private class Engine extends CanvasWatchFaceService.Engine {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
+        boolean mRegisterdMsgReceiver = false;
         Paint mBackgroundPaint;
         Paint mTextPaint;
         boolean mAmbient;
@@ -99,6 +116,24 @@ public class WatchFace extends CanvasWatchFaceService {
                 mTime.setToNow();
             }
         };
+
+
+        final BroadcastReceiver mMsgReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+              //  int temp = intent.getIntExtra("wxTemp", -99);
+               // int icon = intent.getIntExtra("wxIcon", -1);
+             //   Log.d(TAG, "Watchface icon/temp: " +  icon + " - " + temp);
+                String desc = intent.getStringExtra("wx_desc");
+                setWxIconBm(desc);
+                mHighTemp = intent.getStringExtra("wx_high");
+                mLowTemp = intent.getStringExtra("wx_low");
+                invalidate();
+            }
+        };
+
+
         int mTapCount;
 
         float mXOffset;
@@ -181,6 +216,23 @@ public class WatchFace extends CanvasWatchFaceService {
             }
             mRegisteredTimeZoneReceiver = false;
             WatchFace.this.unregisterReceiver(mTimeZoneReceiver);
+        }
+
+        private void registerMsgReceiver() {
+            if(mRegisterdMsgReceiver) {
+                return;
+            }
+            mRegisterdMsgReceiver = true;
+            IntentFilter filter = new IntentFilter(WearDataService.MSG_WX_DATA);
+            LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mMsgReceiver, filter);
+
+        }
+
+        private void unregisterMsgReceiver() {
+            if(mRegisterdMsgReceiver) {
+                mRegisterdMsgReceiver = false;
+                LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mMsgReceiver);
+            }
         }
 
         @Override
@@ -298,5 +350,37 @@ public class WatchFace extends CanvasWatchFaceService {
                 mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
             }
         }
+    }
+
+    private Bitmap setWxIconBm(String desc) {
+        switch (desc) {
+            case WX_CLEAR:
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_clear);
+                break;
+            case WX_CLOUDY:
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_cloudy);
+                break;
+            case WX_FOG:
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_fog);
+                break;
+            case WX_SCATTERED :
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_light_clouds);
+                break;
+            case WX_RAIN :
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_rain);
+                break;
+            case WX_SNOW :
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_snow);
+                break;
+            case WX_STORM :
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_storm);
+                break;
+            default:
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_blank);
+                Log.e(TAG, "Unknown weather icon!!!!!!!");
+                break;
+        }
+
+        return mWxIconBm;
     }
 }
