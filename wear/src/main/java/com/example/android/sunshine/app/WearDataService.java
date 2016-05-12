@@ -13,7 +13,7 @@ import com.google.android.gms.wearable.WearableListenerService;
 public class WearDataService extends WearableListenerService {
 
     private static final String TAG = "WearableListenerService";
-    public static final String MSG_WX_DATA = "com.grayraven.swarmwatchface.MSG_WX_DATA";
+    public static final String MSG_WX_DATA = "com.example.android.sunshine.app.MSG_WX_DATA";
 
     public WearDataService() {
     }
@@ -27,21 +27,23 @@ public class WearDataService extends WearableListenerService {
                 DataMap dataMap = DataMapItem.fromDataItem(dataEvent.getDataItem()).getDataMap();
                 String path = dataEvent.getDataItem().getUri().getPath();
                 if(path.equals("/wx_icon")) {
-                    int wxIcon = dataMap.getInt("wx_icon_number");
-                    Log.d(TAG, "new icon number: " + wxIcon);
-                    int temp = dataMap.getInt("wx_temp");
-                    Log.d(TAG, "watch temp: " + temp);
-                    PostDataToWatch(wxIcon, temp);
+                    String wx_desc = dataMap.getString("wx_desc", "");
+                    Log.d(TAG, "wx desc: " + wx_desc);
+                    String lowTemp = dataMap.getString("low_temp", "");
+                    Log.d(TAG, "low temp: " + lowTemp);
+                    String highTemp = dataMap.getString("high_temp", "");
+                    PostDataToWatch(wx_desc,lowTemp,highTemp);
                 }
             }
         }
     }
 
-    private void PostDataToWatch(int wxIcon, int wxTemp) {
+    private void PostDataToWatch(String desc, String low, String high) {
         Intent intent = new Intent(MSG_WX_DATA);
         Log.d(TAG, "Posting data to watch");
-        intent.putExtra("wxIcon", wxIcon);
-        intent.putExtra("wxTemp", wxTemp);
+        intent.putExtra("wx_desc", desc);
+        intent.putExtra("wx_high", high);
+        intent.putExtra("wx_low", low);
         final boolean b = LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
         Log.d(TAG, "broadcast result: " + b);
     }
