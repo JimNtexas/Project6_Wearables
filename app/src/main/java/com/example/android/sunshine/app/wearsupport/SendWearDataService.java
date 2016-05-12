@@ -21,8 +21,22 @@ public class SendWearDataService extends IntentService {
     static final String LOW_TEMP = "com.example.android.sunshine.app.wearsupport.extra.LOW_TEMP";
     static final String WX_DESC = "com.example.android.sunshine.app.wearsupport.extra.WX_DESC";
     private static final String TAG = "SendWearDataService";
+
+    private GoogleApiClient client = null;
     public SendWearDataService() {
         super("SendWearDataService");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        client.disconnect();
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        client = SetupApiClient();
     }
 
     /**
@@ -36,8 +50,6 @@ public class SendWearDataService extends IntentService {
                 final String lowTemp = intent.getStringExtra(LOW_TEMP);
                 final String wxDesc = intent.getStringExtra(WX_DESC);
 
-                GoogleApiClient client = SetupApiClient();
-
                 PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/wx_icon");
                 putDataMapRequest.getDataMap().putString("wx_desc", wxDesc);
                 putDataMapRequest.getDataMap().putString("low_temp", lowTemp);
@@ -45,6 +57,10 @@ public class SendWearDataService extends IntentService {
                 Log.d(TAG, "mobile sending icon/temp: " + lowTemp + " - " + highTemp);
 
                 PutDataRequest request = putDataMapRequest.asPutDataRequest();
+
+                if(!client.isConnected()) {
+                    Log.e(TAG, "GoogleApiClient NOT CONNECTED!");
+                }
                 Wearable.DataApi.putDataItem(client, request)
                         .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
                             @Override
