@@ -333,7 +333,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 //Save temps and description to pass to wear
                 SharedPreferences prefs = getContext().getSharedPreferences("WX_DATA", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putString("desc", description);
+                editor.putString("short_desc", description);
                 editor.putString("high_temp", String.valueOf(high));
                 editor.putString("low_temp", String.valueOf(low));
                 editor.apply();

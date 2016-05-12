@@ -66,15 +66,16 @@ public class WatchFace extends CanvasWatchFaceService {
     private Bitmap mWxIconBm;
     private String mHighTemp;
     private String mLowTemp;
+    private boolean isRound = false;
 
-    public static final String WX_CLEAR = "clear";
-    public static final String WX_CLOUDY = "clouds";
-    public static final String WX_FOG = "fog";
-    public static final String WX_SCATTERED = "light_clouds";
-    public static final String WX_LIGHT_RAIN = "light_rain";
-    public static final String WX_RAIN = "rain";
-    public static final String WX_SNOW = "snow";
-    public static final String WX_STORM = "storm";
+    public static final String WX_CLEAR = "Clear";
+    public static final String WX_CLOUDY = "Clouds";
+    public static final String WX_FOG = "Fog";
+    public static final String WX_SCATTERED = "Light_clouds";
+    public static final String WX_LIGHT_RAIN = "Light_rain";
+    public static final String WX_RAIN = "Rain";
+    public static final String WX_SNOW = "Snow";
+    public static final String WX_STORM = "Storm";
 
     @Override
     public Engine onCreateEngine() {
@@ -122,22 +123,17 @@ public class WatchFace extends CanvasWatchFaceService {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
-              //  int temp = intent.getIntExtra("wxTemp", -99);
-               // int icon = intent.getIntExtra("wxIcon", -1);
-             //   Log.d(TAG, "Watchface icon/temp: " +  icon + " - " + temp);
                 String desc = intent.getStringExtra("wx_desc");
                 setWxIconBm(desc);
                 mHighTemp = intent.getStringExtra("wx_high");
                 mLowTemp = intent.getStringExtra("wx_low");
+                Log.d(TAG, "Watch wx update: " + desc + " " + mHighTemp + " / " + mLowTemp);
                 invalidate();
             }
         };
 
 
         int mTapCount;
-
-        float mXOffset;
-        float mYOffset;
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -151,21 +147,27 @@ public class WatchFace extends CanvasWatchFaceService {
             Log.d(TAG, "WatchFace onCreate");
 
             setWatchFaceStyle(new WatchFaceStyle.Builder(WatchFace.this)
-                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
+                    .setCardPeekMode(WatchFaceStyle.PEEK_MODE_SHORT)
+                    .setAmbientPeekMode(WatchFaceStyle.AMBIENT_PEEK_MODE_HIDDEN)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
                     .setAcceptsTapEvents(true)
                     .build());
             Resources resources = WatchFace.this.getResources();
-            mYOffset = resources.getDimension(R.dimen.digital_y_offset);
 
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(resources.getColor(R.color.background));
+            mBackgroundPaint.setColor(resources.getColor(R.color.background_turquoise1));
 
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
+            // Create the Paint for later use
+            mTextPaint = new Paint();
+            mTextPaint.setColor(Color.WHITE);
+            mTextPaint.setAntiAlias(true);
 
             mTime = new Time();
+
+            registerMsgReceiver();
         }
 
         @Override
@@ -241,13 +243,14 @@ public class WatchFace extends CanvasWatchFaceService {
 
             // Load resources that have alternate values for round watches.
             Resources resources = WatchFace.this.getResources();
-            boolean isRound = insets.isRound();
-            mXOffset = resources.getDimension(isRound
-                    ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
+            isRound = insets.isRound();
+            Log.d(TAG, "Watch is round? : " + isRound);
             float textSize = resources.getDimension(isRound
                     ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
 
             mTextPaint.setTextSize(textSize);
+
+            Log.i(TAG, "text size: " + textSize);
         }
 
         @Override
@@ -265,14 +268,21 @@ public class WatchFace extends CanvasWatchFaceService {
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
+            Resources resources = WatchFace.this.getResources();
             if (mAmbient != inAmbientMode) {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
                     mTextPaint.setAntiAlias(!inAmbientMode);
                 }
+
+                if (inAmbientMode){
+                    mBackgroundPaint.setColor(Color.BLACK);
+                }
+                else {
+                    mBackgroundPaint.setColor(resources.getColor(R.color.background_turquoise1));
+                }
                 invalidate();
             }
-
             // Whether the timer should be running depends on whether we're visible (as well as
             // whether we're in ambient mode), so we may need to start or stop the timer.
             updateTimer();
@@ -283,7 +293,7 @@ public class WatchFace extends CanvasWatchFaceService {
          * a tap.
          */
         @Override
-        public void onTapCommand(int tapType, int x, int y, long eventTime) {
+        public void onTapCommand(int tapType, int x, int y, long eventTime) { //request wx update?
             Resources resources = WatchFace.this.getResources();
             switch (tapType) {
                 case TAP_TYPE_TOUCH:
@@ -311,13 +321,34 @@ public class WatchFace extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
+            float timeSize = mAmbient ? mTextPaint.measureText("12:00")  :  mTextPaint.measureText("12:00:00");
+            float xOffset = (bounds.width() - timeSize)/2;
+            float yOffset =  bounds.centerY() - (mTextPaint.getTextSize() / 2.0f) +8f; //8f is to clear the google settings icon on the watch face
+            if(isRound) {
+                yOffset -= 15f;
+            }
+
+            //Log.d(TAG, "xOffset: " + xOffset + " yOffset: " + yOffset);
+
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             mTime.setToNow();
             String text = mAmbient
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
-            canvas.drawText("Project Six", mXOffset, mYOffset, mTextPaint);
+            canvas.drawText(text, xOffset, yOffset, mTextPaint);
+
+            if(!mAmbient && mWxIconBm != null) {
+                float iconX = (bounds.width() - mWxIconBm.getWidth())/2f;
+                canvas.drawBitmap(mWxIconBm, iconX, yOffset + 10, null);
+                float currentTextSize = mTextPaint.getTextSize();
+                mTextPaint.setTextSize(currentTextSize * 0.3f);
+                canvas.drawText(mHighTemp, xOffset, yOffset + 35f, mTextPaint);
+                float lowXoffset = bounds.centerX() + 35;
+                canvas.drawText(mLowTemp, lowXoffset, yOffset + 35f, mTextPaint);
+                mTextPaint.setTextSize(currentTextSize);
+            }
         }
+
 
         /**
          * Starts the {@link #mUpdateTimeHandler} timer if it should be running and isn't currently
