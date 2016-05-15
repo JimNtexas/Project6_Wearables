@@ -151,7 +151,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 // But it does make debugging a *lot* easier if you print out the completed
                 // buffer for debugging.
                 buffer.append(line + "\n");
-                Log.d(LOG_TAG, buffer.toString());
+               // Log.d(LOG_TAG, buffer.toString());
             }
 
             if (buffer.length() == 0) {

@@ -4,4 +4,5 @@
     <color name="background2">#000088</color>
     <color name="digital_text">#ffffff</color>
     <color name="background_turquoise1">#00f5ff</color>
+    <color name="lowtemp_color">#0099cc</color>
 </resources>

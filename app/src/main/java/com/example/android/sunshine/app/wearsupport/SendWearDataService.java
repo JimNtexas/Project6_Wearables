@@ -11,6 +11,8 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
  * a service on a separate handler thread.
@@ -37,7 +39,6 @@ public class SendWearDataService extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-        client = SetupApiClient();
     }
 
     /**
@@ -47,10 +48,12 @@ public class SendWearDataService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
+
                 final String highTemp = intent.getStringExtra(HIGH_TEMP);
                 final String lowTemp = intent.getStringExtra(LOW_TEMP);
                 final String wxDesc = intent.getStringExtra(WX_DESC);
                 final long wxTime = intent.getLongExtra(WX_TIME, 0);
+                client = SetupApiClient();
 
                 PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/wx_icon");
                 putDataMapRequest.getDataMap().putString("wx_desc", wxDesc);
@@ -63,6 +66,7 @@ public class SendWearDataService extends IntentService {
 
                 if(!client.isConnected()) {
                     Log.e(TAG, "GoogleApiClient NOT CONNECTED!");
+                    return;
                 }
                 Wearable.DataApi.putDataItem(client, request)
                         .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
@@ -71,6 +75,8 @@ public class SendWearDataService extends IntentService {
                                 Log.d(TAG, dataItemResult.getStatus().isSuccess() ? "Mobile putdata success" : "Mobile putdata failed");
                             }
                         });
+
+                client.disconnect();
             }
 
         }
@@ -79,7 +85,7 @@ public class SendWearDataService extends IntentService {
         GoogleApiClient client = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
                 .build();
-        client.connect();
+        client.blockingConnect(2, TimeUnit.SECONDS);
         return client;
 
     }

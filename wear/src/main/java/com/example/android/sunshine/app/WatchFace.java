@@ -185,6 +185,9 @@ public class WatchFace extends CanvasWatchFaceService {
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            if(apiClient!= null && apiClient.isConnected()) {
+                apiClient.disconnect();
+            }
             super.onDestroy();
         }
 
@@ -349,23 +352,39 @@ public class WatchFace extends CanvasWatchFaceService {
                 yOffset -= 15f;
             }
 
-            //Log.d(TAG, "xOffset: " + xOffset + " yOffset: " + yOffset);
-
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             mTime.setToNow();
+
+            String AmbFormat = "%d:%02d";
+            String VisFormat = "%d:%02d:%02d";
+            //add leading zero between midnight and 9:59:59
+            if(mTime.hour >= 0 && mTime.hour < 10) {
+                AmbFormat = "0%d:%02d";
+                VisFormat =  "0%d:%02d:%02d";
+            }
+
             String text = mAmbient
-                    ? String.format("%d:%02d", mTime.hour, mTime.minute)
-                    : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
+                    ? String.format(AmbFormat, mTime.hour, mTime.minute)
+                    : String.format(VisFormat, mTime.hour, mTime.minute, mTime.second);
             canvas.drawText(text, xOffset, yOffset, mTextPaint);
 
+            canvas.drawText("|", bounds.centerX(), 10f, mTextPaint);  //todo: debug only, remove before release
+
             if(!mAmbient && mWxIconBm != null) {
-                float iconX = (bounds.width() - mWxIconBm.getWidth())/2f;
+
+                float iconX = bounds.centerX() - (mWxIconBm.getScaledWidth(canvas) / 2f) + 7f;
                 canvas.drawBitmap(mWxIconBm, iconX, yOffset + 10, null);
+
                 float currentTextSize = mTextPaint.getTextSize();
                 mTextPaint.setTextSize(currentTextSize * 0.3f);
-                canvas.drawText(mHighTemp, xOffset, yOffset + 35f, mTextPaint);
-                float lowXoffset = bounds.centerX() + 35;
+
+                float highXoffset = iconX - 40f;
+                canvas.drawText(mHighTemp, highXoffset, yOffset + 35f, mTextPaint);
+
+                float lowXoffset = iconX + 66f;
+                mTextPaint.setColor(getResources().getColor(R.color.lowtemp_color));
                 canvas.drawText(mLowTemp, lowXoffset, yOffset + 35f, mTextPaint);
+                mTextPaint.setColor(Color.WHITE);
                 mTextPaint.setTextSize(currentTextSize);
             }
         }
@@ -434,7 +453,7 @@ public class WatchFace extends CanvasWatchFaceService {
                 if(desc.isEmpty()) {
                     mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_blank);
                 } else {
-                    Log.e(TAG, "Unknown weather icon!!!!!!!");
+                    Log.e(TAG, "Unknown weather icon!!!!");
                     mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_unknown);
                 }
                 break;
