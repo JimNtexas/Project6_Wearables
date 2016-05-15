@@ -36,7 +36,6 @@ import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -48,7 +47,6 @@ import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -165,7 +163,6 @@ public class WatchFace extends CanvasWatchFaceService {
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
                     .setAcceptsTapEvents(true)
-                    .setHotwordIndicatorGravity(Gravity.BOTTOM)
                     .build());
             Resources resources = WatchFace.this.getResources();
 
@@ -210,24 +207,24 @@ public class WatchFace extends CanvasWatchFaceService {
                 if(apiClient == null) {
                     Log.d(TAG, "api client is null");
                 }else {
-                    Log.d(TAG, "api connected: " + (apiClient.isConnected() ? "CONNECTED" : "DISCONNECTED"));
-                    Log.d(TAG, "remote node id: " + remoteNodeId);
-                    if(mHighTemp.isEmpty() || mLowTemp.isEmpty()) {
-                        RequestSynchFromDevice();
-                    }
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            RequestSynchFromDevice(); // we delay this call to allow time for the apiClient to initialize
+                        }
+                    }, 1000);
                 }
-
-                // Update time zone in case it changed while we weren't visible.
-                mTime.clear(TimeZone.getDefault().getID());
-                mTime.setToNow();
-            } else {
+                } else {
                 unregisterReceiver();
+
             }
 
             // Whether the timer should be running depends on whether we're visible (as well as
             // whether we're in ambient mode), so we may need to start or stop the timer.
             updateTimer();
         }
+
+
 
         private void registerReceiver() {
             if (mRegisteredTimeZoneReceiver) {
@@ -511,6 +508,8 @@ public class WatchFace extends CanvasWatchFaceService {
                 if (sendMessageResult.getStatus().isSuccess()) {
                     intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE, ConfirmationActivity.SUCCESS_ANIMATION);
                     intent.putExtra(ConfirmationActivity.EXTRA_MESSAGE, "WATCH_REQUESTS_SYNCH");
+                } else {
+                    Log.d(TAG, "RequestSynchFromDevice failed!");
                 }
             }
         });
