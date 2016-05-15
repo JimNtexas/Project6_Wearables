@@ -87,6 +87,7 @@ public class WatchFace extends CanvasWatchFaceService {
 
     private GoogleApiClient apiClient;
     private String remoteNodeId;
+    private boolean mDataVisible = false;
 
     @Override
     public Engine onCreateEngine() {
@@ -212,11 +213,10 @@ public class WatchFace extends CanvasWatchFaceService {
                         public void run() {
                             RequestSynchFromDevice(); // we delay this call to allow time for the apiClient to initialize
                         }
-                    }, 1000);
+                    }, 2000);
                 }
                 } else {
                 unregisterReceiver();
-
             }
 
             // Whether the timer should be running depends on whether we're visible (as well as
@@ -316,7 +316,7 @@ public class WatchFace extends CanvasWatchFaceService {
          * a tap.
          */
         @Override
-        public void onTapCommand(int tapType, int x, int y, long eventTime) { //request wx update?
+        public void onTapCommand(int tapType, int x, int y, long eventTime) {
             Resources resources = WatchFace.this.getResources();
             switch (tapType) {
                 case TAP_TYPE_TOUCH:
@@ -369,7 +369,7 @@ public class WatchFace extends CanvasWatchFaceService {
 
          //   canvas.drawText("|", bounds.centerX(), 10f, mTextPaint);  //todo: debug only, remove before release
 
-            if(!mAmbient && mWxIconBm != null) {
+            if(!mAmbient && (mWxIconBm != null )) {
 
                 float iconX = bounds.centerX() - (mWxIconBm.getScaledWidth(canvas) / 2f) + 7f;
                 canvas.drawBitmap(mWxIconBm, iconX, yOffset + 10, null);
@@ -385,6 +385,9 @@ public class WatchFace extends CanvasWatchFaceService {
                 canvas.drawText(mLowTemp, lowXoffset, yOffset + 35f, mTextPaint);
                 mTextPaint.setColor(Color.WHITE);
                 mTextPaint.setTextSize(currentTextSize);
+                mDataVisible = true;
+            } else {
+                mDataVisible = false;
             }
         }
 
@@ -441,6 +444,9 @@ public class WatchFace extends CanvasWatchFaceService {
                 break;
             case WX_RAIN :
                 mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_rain);
+                break;
+            case WX_LIGHT_RAIN:
+                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_light_rain);
                 break;
             case WX_SNOW :
                 mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_snow);

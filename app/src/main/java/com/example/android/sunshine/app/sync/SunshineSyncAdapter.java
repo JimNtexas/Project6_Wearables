@@ -342,6 +342,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                             Utility.formatTemperature(context, low);
                     editor.putString("high_temp", formattedMaxTemperature);
                     editor.putString("low_temp", formattedMinTemperature);
+                    Log.d(LOG_TAG, "system time: " + System.currentTimeMillis());
                     editor.putLong("update_time", System.currentTimeMillis() );
                     editor.apply();
 

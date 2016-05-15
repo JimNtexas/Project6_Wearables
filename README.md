@@ -1,5 +1,14 @@
-Wear support added by Jim Howard, based on example code provided by SWARM:
+Wear support added by Jim Howard
+
+If the watch does not display temperatures and a condition icon when first displayed, please open the Sunshine app on your mobile device. 
+Otherwise it can be several minutes before weather data is displayed.
+  
+
+I was greatly assisted by these two articles:
+
 http://swarmnyc.com/whiteboard/how-to-design-and-develop-an-android-watch-face-app-wearables-overview/
+
+http://dejan.djurovski.net/2015/01/15/android-wear-wearable-message-api/
 
 
 Advanced Android Sample App

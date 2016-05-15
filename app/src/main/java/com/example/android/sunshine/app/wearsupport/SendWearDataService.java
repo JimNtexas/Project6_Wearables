@@ -59,7 +59,7 @@ public class SendWearDataService extends IntentService {
                 putDataMapRequest.getDataMap().putString("wx_desc", wxDesc);
                 putDataMapRequest.getDataMap().putString("low_temp", lowTemp);
                 putDataMapRequest.getDataMap().putString("high_temp", highTemp);
-                putDataMapRequest.getDataMap().putLong("time", wxTime);
+                putDataMapRequest.getDataMap().putLong("update_time", wxTime);
                 putDataMapRequest.setUrgent();
                 Log.d(TAG, "mobile sending icon/temp: " + lowTemp + " - " + highTemp);
 
