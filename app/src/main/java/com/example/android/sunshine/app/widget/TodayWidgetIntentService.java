@@ -85,6 +85,8 @@ public class TodayWidgetIntentService extends IntentService {
         String formattedMinTemperature = Utility.formatTemperature(this, minTemp);
         data.close();
 
+
+
         // Perform this loop procedure for each Today widget
         for (int appWidgetId : appWidgetIds) {
             // Find the correct layout based on the widget's width

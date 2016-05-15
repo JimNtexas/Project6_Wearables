@@ -73,8 +73,8 @@ public class WatchFace extends CanvasWatchFaceService {
     private static final int MSG_UPDATE_TIME = 0;
 
     private Bitmap mWxIconBm;
-    private String mHighTemp;
-    private String mLowTemp;
+    private String mHighTemp = "";
+    private String mLowTemp = "";
     private boolean isRound = false;
 
     public static final String WX_CLEAR = "Clear";
@@ -407,6 +407,7 @@ public class WatchFace extends CanvasWatchFaceService {
 
 
     private Bitmap setWxIconBm(String desc) {
+        Log.d(TAG, "Wear wx icon: " + desc);
         switch (desc) {
             case WX_CLEAR:
                 mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_clear);
@@ -430,8 +431,12 @@ public class WatchFace extends CanvasWatchFaceService {
                 mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_storm);
                 break;
             default:
-                mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_blank);
-                Log.e(TAG, "Unknown weather icon!!!!!!!");
+                if(desc.isEmpty()) {
+                    mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_blank);
+                } else {
+                    Log.e(TAG, "Unknown weather icon!!!!!!!");
+                    mWxIconBm = BitmapFactory.decodeResource(getResources(), R.drawable.ic_unknown);
+                }
                 break;
         }
 
@@ -439,7 +444,7 @@ public class WatchFace extends CanvasWatchFaceService {
     }
 
     private void initGoogleApiClient() {
-
+//TODO: DON'T LEAK!!!!!!
         apiClient = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
@@ -477,10 +482,11 @@ public class WatchFace extends CanvasWatchFaceService {
     }
 
     private void RequestSynchFromDevice() {
-        Wearable.MessageApi.sendMessage(apiClient, remoteNodeId, MESSAGE1_PATH, null).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+        Wearable.MessageApi.sendMessage(apiClient, remoteNodeId, SYNCH_REQUEST, null).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
             @Override
             public void onResult(MessageApi.SendMessageResult sendMessageResult) {
                 Intent intent = new Intent(getApplicationContext(), ConfirmationActivity.class);
+                Log.e(TAG, "Wearable.MessageApi.sendMessage result: " + sendMessageResult.getStatus().toString());
                 if (sendMessageResult.getStatus().isSuccess()) {
                     intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE, ConfirmationActivity.SUCCESS_ANIMATION);
                     intent.putExtra(ConfirmationActivity.EXTRA_MESSAGE, "WATCH_REQUESTS_SYNCH");

@@ -17,9 +17,10 @@ import com.google.android.gms.wearable.Wearable;
  */
 
 public class SendWearDataService extends IntentService {
-    static final String HIGH_TEMP = "com.example.android.sunshine.app.wearsupport.extra.HIGH_TEMP";
-    static final String LOW_TEMP = "com.example.android.sunshine.app.wearsupport.extra.LOW_TEMP";
-    static final String WX_DESC = "com.example.android.sunshine.app.wearsupport.extra.WX_DESC";
+    public static final String HIGH_TEMP = "com.example.android.sunshine.app.wearsupport.extra.HIGH_TEMP";
+    public static final String LOW_TEMP = "com.example.android.sunshine.app.wearsupport.extra.LOW_TEMP";
+    public static final String WX_DESC = "com.example.android.sunshine.app.wearsupport.extra.WX_DESC";
+    public static final String WX_TIME = "com.example.android.sunshine.app.wearsupport.extra.TIME";
     private static final String TAG = "SendWearDataService";
 
     private GoogleApiClient client = null;
@@ -49,11 +50,13 @@ public class SendWearDataService extends IntentService {
                 final String highTemp = intent.getStringExtra(HIGH_TEMP);
                 final String lowTemp = intent.getStringExtra(LOW_TEMP);
                 final String wxDesc = intent.getStringExtra(WX_DESC);
+                final long wxTime = intent.getLongExtra(WX_TIME, 0);
 
                 PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/wx_icon");
                 putDataMapRequest.getDataMap().putString("wx_desc", wxDesc);
                 putDataMapRequest.getDataMap().putString("low_temp", lowTemp);
                 putDataMapRequest.getDataMap().putString("high_temp", highTemp);
+                putDataMapRequest.getDataMap().putLong("time", wxTime);
                 Log.d(TAG, "mobile sending icon/temp: " + lowTemp + " - " + highTemp);
 
                 PutDataRequest request = putDataMapRequest.asPutDataRequest();

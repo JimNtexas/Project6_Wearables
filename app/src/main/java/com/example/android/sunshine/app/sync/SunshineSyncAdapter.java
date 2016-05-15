@@ -53,12 +53,13 @@ import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
 public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
-    public final String LOG_TAG = SunshineSyncAdapter.class.getSimpleName();
+    public static final String LOG_TAG = SunshineSyncAdapter.class.getSimpleName();
     public static final String ACTION_DATA_UPDATED =
             "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
+
     // Interval at which to sync with the weather, in seconds.
     // 60 seconds (1 minute) * 180 = 3 hours
-    public static final int SYNC_INTERVAL = 60 * 2;
+    public static final int SYNC_INTERVAL = 60 * 10;
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL/3;
     private static final long DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
     private static final int WEATHER_NOTIFICATION_ID = 3004;
@@ -150,6 +151,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 // But it does make debugging a *lot* easier if you print out the completed
                 // buffer for debugging.
                 buffer.append(line + "\n");
+                Log.d(LOG_TAG, buffer.toString());
             }
 
             if (buffer.length() == 0) {
@@ -297,7 +299,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
                 // Cheating to convert this to UTC time, which is what we want anyhow
                 dateTime = dayTime.setJulianDay(julianStartDay+i);
-
                 pressure = dayForecast.getDouble(OWM_PRESSURE);
                 humidity = dayForecast.getInt(OWM_HUMIDITY);
                 windSpeed = dayForecast.getDouble(OWM_WINDSPEED);
@@ -329,14 +330,24 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 weatherValues.put(WeatherContract.WeatherEntry.COLUMN_SHORT_DESC, description);
                 weatherValues.put(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID, weatherId);
 
+                if(i == 0) {
+                    //Save current data for wear
+                    Context context = getContext();
+                    SharedPreferences prefs = context.getSharedPreferences("WX_DATA", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putString("desc", description);
+                    String formattedMaxTemperature =
+                            Utility.formatTemperature(context, high);
+                    String formattedMinTemperature =
+                            Utility.formatTemperature(context, low);
+                    editor.putString("high_temp", formattedMaxTemperature);
+                    editor.putString("low_temp", formattedMinTemperature);
+                    editor.putLong("update_time", System.currentTimeMillis() );
+                    editor.apply();
+
+                }
+
                 cVVector.add(weatherValues);
-                //Save temps and description to pass to wear
-                SharedPreferences prefs = getContext().getSharedPreferences("WX_DATA", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putString("short_desc", description);
-                editor.putString("high_temp", String.valueOf(high));
-                editor.putString("low_temp", String.valueOf(low));
-                editor.apply();
             }
 
             int inserted = 0;
@@ -564,6 +575,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
      * @param context The context used to access the account service
      */
     public static void syncImmediately(Context context) {
+        Log.d(SunshineSyncAdapter.LOG_TAG, "syncImmediately");
         Bundle bundle = new Bundle();
         bundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
         bundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);

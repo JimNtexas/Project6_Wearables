@@ -12,7 +12,7 @@ import com.google.android.gms.wearable.WearableListenerService;
 
 public class WearDataService extends WearableListenerService {
 
-    private static final String TAG = "WearableListenerService";
+    private static final String TAG = "WearDataService";
     public static final String MSG_WX_DATA = "com.example.android.sunshine.app.MSG_WX_DATA";
 
     public WearDataService() {
