@@ -32,6 +32,8 @@ public class WearDataService extends WearableListenerService {
                     String lowTemp = dataMap.getString("low_temp", "");
                     Log.d(TAG, "low temp: " + lowTemp);
                     String highTemp = dataMap.getString("high_temp", "");
+                    long updateTime = dataMap.getLong("update_time");
+                    Log.d(TAG, "Update time: " + updateTime);
                     PostDataToWatch(wx_desc,lowTemp,highTemp);
                 }
             }

@@ -26,13 +26,14 @@ public class WxProvider extends BroadcastReceiver {
             String high = prefs.getString("high_temp", "-99");
             String low = prefs.getString("low_temp","-99");
             String desc = prefs.getString("desc","-99");
+            Long time = prefs.getLong("update_time", 1);
             Log.d(TAG, "Send to watch:");
             Log.d(TAG, "high: " + high + " low: " + low + " desc: " + desc);
             Intent sendWxData = new Intent(context, SendWearDataService.class);
-  //          intent.setAction(Intent.ACTION_SEND);
             sendWxData.putExtra(SendWearDataService.HIGH_TEMP, high );
             sendWxData.putExtra(SendWearDataService.LOW_TEMP, low );
             sendWxData.putExtra(SendWearDataService.WX_DESC, desc);
+            sendWxData.putExtra(SendWearDataService.WX_TIME, time);
             ComponentName serviceName = context.startService(sendWxData);
             if(serviceName == null){
                 Log.d(TAG, "SendWearDataService failed to start!" );

@@ -36,8 +36,14 @@ import com.example.android.sunshine.app.gcm.RegistrationIntentService;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.Wearable;
 
 public class MainActivity extends AppCompatActivity implements ForecastFragment.Callback {
 
@@ -49,8 +55,12 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
     private boolean mTwoPane;
     private String mLocation;
     private Handler msgHandler;
+    private Handler nodeHandler;
     private MessageApi.MessageListener messageListener;
     public final String SYNCH_REQUEST = "/synch_request";
+    private GoogleApiClient apiClient;
+    private NodeApi.NodeListener nodeListener;
+    private String remoteNodeId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +105,11 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
                     WeatherContract.WeatherEntry.getDateFromUri(contentUri));
         }
 
+        msgHandler = new Handler();
+        nodeHandler = new Handler();
+        InitNodeListener();
+        InitApiClient();
+        CreateMessageListener();
         SunshineSyncAdapter.initializeSyncAdapter(this);
 
         // If Google Play Services is up to date, we'll want to register GCM. If it is not, we'll
@@ -114,8 +129,9 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             }
         }
 
-        CreateMessageListener();
+
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -156,8 +172,30 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             }
             mLocation = location;
         }
+
+        int connectionResult = GooglePlayServicesUtil.isGooglePlayServicesAvailable(getApplicationContext());
+        if(connectionResult == ConnectionResult.SUCCESS) {
+            Log.d(LOG_TAG, "Play service connected");
+            if(apiClient != null &&  !apiClient.isConnected()) {
+                apiClient.connect();
+            }
+        } else {
+            Log.e(LOG_TAG, "Play service NOT connected");
+        }
+
+
         //// TODO: 5/14/2016 - is this synch needed?
-        //     SunshineSyncAdapter.syncImmediately(this);
+        SunshineSyncAdapter.syncImmediately(this);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Wearable.NodeApi.removeListener(apiClient, nodeListener);
+        Wearable.MessageApi.removeListener(apiClient, messageListener);
+        if(apiClient != null &&  apiClient.isConnected()){
+            apiClient.disconnect();
+        }
     }
 
     @Override
@@ -227,4 +265,63 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
         };
         Log.d(LOG_TAG, (messageListener == null ? "messageListener is null" : messageListener.toString())  );
     }
+
+    private void InitApiClient() {
+        apiClient = new GoogleApiClient.Builder(getApplicationContext()).addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+            @Override
+            public void onConnected(Bundle bundle) {
+                // Register Node and Message listeners
+                Wearable.NodeApi.addListener(apiClient, nodeListener);
+                Wearable.MessageApi.addListener(apiClient, messageListener);
+                // If there is a connected node, get it's id that is used when sending messages
+                Wearable.NodeApi.getConnectedNodes(apiClient).setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                    @Override
+                    public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
+                        if (getConnectedNodesResult.getStatus().isSuccess() && getConnectedNodesResult.getNodes().size() > 0) {
+                            remoteNodeId = getConnectedNodesResult.getNodes().get(0).getId();
+                            Log.d(LOG_TAG, "App api client found node: " + remoteNodeId);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onConnectionSuspended(int i) {
+            }
+        }).addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+            @Override
+            public void onConnectionFailed(ConnectionResult connectionResult) {
+                if (connectionResult.getErrorCode() == ConnectionResult.API_UNAVAILABLE)
+                    Log.e(LOG_TAG, "Api connection failed in app");
+            }
+        }).addApi(Wearable.API).build();
+    }// end InitApiClient
+
+    private void InitNodeListener() {
+        // Create NodeListener that enables buttons when a node is connected and disables buttons when a node is disconnected
+        nodeListener = new NodeApi.NodeListener() {
+            @Override
+            public void onPeerConnected(Node node) {
+                remoteNodeId = node.getId();
+                nodeHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(LOG_TAG, "Peer connected");
+                        //todo: synch?
+                    }
+                });
+            }
+
+            @Override
+            public void onPeerDisconnected(Node node) {
+                nodeHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                       Log.d(LOG_TAG, "Node disconnected");
+                    }
+                });
+            }
+        };
+    } //end InitNodeListener
 }
+

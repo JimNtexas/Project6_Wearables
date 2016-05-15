@@ -36,6 +36,7 @@ import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -164,6 +165,7 @@ public class WatchFace extends CanvasWatchFaceService {
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
                     .setAcceptsTapEvents(true)
+                    .setHotwordIndicatorGravity(Gravity.BOTTOM)
                     .build());
             Resources resources = WatchFace.this.getResources();
 
@@ -368,7 +370,7 @@ public class WatchFace extends CanvasWatchFaceService {
                     : String.format(VisFormat, mTime.hour, mTime.minute, mTime.second);
             canvas.drawText(text, xOffset, yOffset, mTextPaint);
 
-            canvas.drawText("|", bounds.centerX(), 10f, mTextPaint);  //todo: debug only, remove before release
+         //   canvas.drawText("|", bounds.centerX(), 10f, mTextPaint);  //todo: debug only, remove before release
 
             if(!mAmbient && mWxIconBm != null) {
 
@@ -381,7 +383,7 @@ public class WatchFace extends CanvasWatchFaceService {
                 float highXoffset = iconX - 40f;
                 canvas.drawText(mHighTemp, highXoffset, yOffset + 35f, mTextPaint);
 
-                float lowXoffset = iconX + 66f;
+                float lowXoffset = iconX + 70f;
                 mTextPaint.setColor(getResources().getColor(R.color.lowtemp_color));
                 canvas.drawText(mLowTemp, lowXoffset, yOffset + 35f, mTextPaint);
                 mTextPaint.setColor(Color.WHITE);
@@ -463,7 +465,7 @@ public class WatchFace extends CanvasWatchFaceService {
     }
 
     private void initGoogleApiClient() {
-//TODO: DON'T LEAK!!!!!!
+
         apiClient = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
