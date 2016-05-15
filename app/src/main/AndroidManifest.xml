@@ -195,7 +195,7 @@
         <service
             android:name=".wearsupport.SendWearDataService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
     </application>
 
 </manifest>
