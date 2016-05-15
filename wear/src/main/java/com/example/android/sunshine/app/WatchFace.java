@@ -31,12 +31,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.wearable.activity.ConfirmationActivity;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
 import java.util.TimeZone;
@@ -51,6 +59,7 @@ public class WatchFace extends CanvasWatchFaceService {
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
 
     private static final String TAG = "CanvasWatchFaceService";
+    public final String SYNCH_REQUEST = "/synch_request";
 
     /**
      * Update rate in milliseconds for interactive mode. We update once a second since seconds are
@@ -76,6 +85,9 @@ public class WatchFace extends CanvasWatchFaceService {
     public static final String WX_RAIN = "Rain";
     public static final String WX_SNOW = "Snow";
     public static final String WX_STORM = "Storm";
+
+    private GoogleApiClient apiClient;
+    private String remoteNodeId;
 
     @Override
     public Engine onCreateEngine() {
@@ -166,7 +178,7 @@ public class WatchFace extends CanvasWatchFaceService {
             mTextPaint.setAntiAlias(true);
 
             mTime = new Time();
-
+            initGoogleApiClient();
             registerMsgReceiver();
         }
 
@@ -190,6 +202,15 @@ public class WatchFace extends CanvasWatchFaceService {
 
             if (visible) {
                 registerReceiver();
+                if(apiClient == null) {
+                    Log.d(TAG, "api client is null");
+                }else {
+                    Log.d(TAG, "api connected: " + (apiClient.isConnected() ? "CONNECTED" : "DISCONNECTED"));
+                    Log.d(TAG, "remote node id: " + remoteNodeId);
+                    if(mHighTemp.isEmpty() || mLowTemp.isEmpty()) {
+                        RequestSynchFromDevice();
+                    }
+                }
 
                 // Update time zone in case it changed while we weren't visible.
                 mTime.clear(TimeZone.getDefault().getID());
@@ -383,6 +404,8 @@ public class WatchFace extends CanvasWatchFaceService {
         }
     }
 
+
+
     private Bitmap setWxIconBm(String desc) {
         switch (desc) {
             case WX_CLEAR:
@@ -414,4 +437,56 @@ public class WatchFace extends CanvasWatchFaceService {
 
         return mWxIconBm;
     }
+
+    private void initGoogleApiClient() {
+
+        apiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                    @Override
+                    public void onConnected(Bundle bundle) {
+                        Log.d(TAG, "ConnectionCallback onConnected");
+                        Wearable.NodeApi.getConnectedNodes(apiClient).setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                            @Override
+                            public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
+                                if (getConnectedNodesResult.getStatus().isSuccess() && getConnectedNodesResult.getNodes().size() > 0) {
+                                    remoteNodeId = getConnectedNodesResult.getNodes().get(0).getId();
+                                    Log.d(TAG, "Remote node id: " + remoteNodeId);
+                                } else {
+                                    Log.d(TAG, "Get node discovery status: " + getConnectedNodesResult.getStatus().toString());
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onConnectionSuspended(int i) {
+                        Log.d(TAG, "ConnectionCallback onConnectionSuspended");
+                    }
+                })
+                .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                    @Override
+                    public void onConnectionFailed(ConnectionResult connectionResult) {
+                        Log.d(TAG, "ConnectionCallback onConnectionFailed");
+                        //TODO do something on connection failed
+                    }
+                })
+                .build();
+        apiClient.connect();
+
+    }
+
+    private void RequestSynchFromDevice() {
+        Wearable.MessageApi.sendMessage(apiClient, remoteNodeId, MESSAGE1_PATH, null).setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+            @Override
+            public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                Intent intent = new Intent(getApplicationContext(), ConfirmationActivity.class);
+                if (sendMessageResult.getStatus().isSuccess()) {
+                    intent.putExtra(ConfirmationActivity.EXTRA_ANIMATION_TYPE, ConfirmationActivity.SUCCESS_ANIMATION);
+                    intent.putExtra(ConfirmationActivity.EXTRA_MESSAGE, "WATCH_REQUESTS_SYNCH");
+                }
+            }
+        });
+    }
+
 }
